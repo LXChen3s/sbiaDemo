@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sbia.sbiademo.mapper.ArticleMapper">
+  <resultMap id="BaseResultMap" type="com.sbia.sbiademo.model.Article">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="title" jdbcType="VARCHAR" property="title" />
+    <result column="creat_date" jdbcType="TIMESTAMP" property="creatDate" />
+    <result column="userId" jdbcType="INTEGER" property="userid" />
+    <result column="article_words" jdbcType="INTEGER" property="articleWords" />
+    <result column="article_read" jdbcType="INTEGER" property="articleRead" />
+    <result column="article_original" jdbcType="INTEGER" property="articleOriginal" />
+    <result column="article_topping" jdbcType="INTEGER" property="articleTopping" />
+    <result column="content" jdbcType="LONGVARCHAR" property="content" />
+  </resultMap>
+  <resultMap id="BaseResultMap2" type="com.sbia.sbiademo.model.ArticleWrapper" extends="BaseResultMap">
+    <association property="user" columnPrefix="user_" resultMap="com.sbia.sbiademo.mapper.UserMapper.BaseResultMap"/>
+  </resultMap>
+  <resultMap id="BaseResultMap3" type="com.sbia.sbiademo.util.PageBean" extends="BaseResultMap">
+    <result property="total" column="total"/>
+    <collection property="Tlist" resultMap="com.sbia.sbiademo.mapper.ArticleMapper.BaseResultMap2"/>
+  </resultMap>
+  <!-- 带用户，类别信息的文章 -->
+  <resultMap id="BaseResultMap4" type="com.sbia.sbiademo.model.ArticleWrapper" extends="BaseResultMap">
+    <association property="user" columnPrefix="user_" resultMap="com.sbia.sbiademo.mapper.UserMapper.BaseResultMap"/>
+    <association property="category" columnPrefix="category_" resultMap="com.sbia.sbiademo.mapper.CategoryMapper.BaseResultMap"/>
+  </resultMap>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from tb_article
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.sbia.sbiademo.model.Article">
+    <selectKey keyProperty="id" order="BEFORE" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into tb_article ( title, creat_date,
+      userId,
+      <if test="articleWords!=null and articleWords!=''">
+        article_words,
+      </if>
+      <if test="articleRead!=null and articleRead!=''">
+        article_read,
+      </if>
+      <if test="articleOriginal!=null and articleOriginal!=''">
+        article_original,
+      </if>
+      <if test="articleTopping!=null and articleTopping!=''">
+        article_topping,
+      </if>
+      content
+      )
+    values ( #{title,jdbcType=VARCHAR}, #{creatDate,jdbcType=TIMESTAMP},
+      #{userid,jdbcType=INTEGER},
+      <if test="articleWords!=null and articleWords!=''">
+        #{articleWords,jdbcType=INTEGER},
+      </if>
+      <if test="articleRead!=null and articleRead!=''">
+        #{articleRead,jdbcType=INTEGER},
+      </if>
+      <if test="articleOriginal!=null and articleOriginal!=''">
+        #{articleOriginal,jdbcType=INTEGER},
+      </if>
+      <if test="articleTopping!=null and articleTopping!=''">
+        #{articleTopping,jdbcType=INTEGER},
+      </if>
+      #{content,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <update id="updateByPrimaryKey" parameterType="com.sbia.sbiademo.model.Article">
+    update tb_article
+    <set>
+      <if test="title!=null and title!=''">
+        title = #{title,jdbcType=VARCHAR},
+      </if>
+      <if test="creatDate!=null and creatDate!=''">
+        creat_date = #{creatDate,jdbcType=TIMESTAMP},
+      </if>
+      <if test="userid!=null and userid!=''">
+        userId = #{userid,jdbcType=INTEGER},
+      </if>
+      <if test="articleWords!=null and articleWords!=''">
+        article_words = #{articleWords,jdbcType=INTEGER},
+      </if>
+      <if test="articleRead!=null and articleRead!=''">
+        article_read = #{articleRead,jdbcType=INTEGER},
+      </if>
+      <if test="articleOriginal!=null and articleOriginal!=''">
+        article_original = #{articleOriginal,jdbcType=INTEGER},
+      </if>
+      <if test="articleTopping!=null and articleTopping!=''">
+        article_topping = #{articleTopping,jdbcType=INTEGER},
+      </if>
+      <if test="content!=null and content!=''">
+        content = #{content,jdbcType=LONGVARCHAR}
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select id, title, creat_date, userId, article_words, article_read, article_original, 
+    article_topping, content
+    from tb_article
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="selectAll" resultMap="BaseResultMap">
+    select id, title, creat_date, userId, article_words, article_read, article_original, 
+    article_topping, content
+    from tb_article
+  </select>
+  <!-- 带简介的分页查询 -->
+  <select id="selectWithCount" resultType="java.lang.Integer">
+    select count(id) from tb_article
+  </select>
+  <select id="selectWithPage" parameterType="com.sbia.sbiademo.util.PageBean" resultMap="BaseResultMap2">
+    SELECT
+      art.id,
+      art.title,
+      art.creat_date,
+      art.article_words,
+      art.article_read,
+      art.article_original,
+      art.article_topping,
+      art.content,
+      us.`name` user_name
+    FROM
+      tb_article art
+      INNER JOIN tb_user us ON us.id = art.userId
+    limit #{startIndex},#{pageSize}
+  </select>
+  <select id="selectIndexArticles" resultMap="BaseResultMap4">
+    SELECT
+      art.id,
+      art.title,
+      art.creat_date,
+      art.userId,
+      art.article_words,
+      art.article_read,
+      art.article_original,
+      art.article_topping,
+      art.content,
+      us.id user_id,
+      cat.category_name category_category_name
+    FROM
+      tb_article art
+      INNER JOIN tb_user us ON art.userId = us.id
+      INNER JOIN tb_category cat ON art.categoryId = cat.id
+    ORDER BY
+      art.creat_date DESC
+    LIMIT 0,
+      5
+  </select>
+  <!-- 获取文章具体页面数据 -->
+  <select id="selectArticleById" parameterType="java.lang.Integer" resultMap="BaseResultMap4">
+    SELECT
+      art.id,
+      art.title,
+      art.creat_date,
+      art.userId,
+      art.article_words,
+      art.article_read,
+      art.article_original,
+      art.article_topping,
+      art.content,
+      us.id user_id,
+      us.nickname user_nickname,
+      cat.category_name category_category_name
+    FROM
+      tb_article art
+      INNER JOIN tb_user us ON art.userId = us.id
+      INNER JOIN tb_category cat ON art.categoryId = cat.id
+    WHERE
+      art.id = #{id}
+  </select>
+</mapper>

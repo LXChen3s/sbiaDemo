@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Hello React!</title>
+    <script src="https://cdn.staticfile.org/react/16.4.0/umd/react.development.js"></script>
+    <script src="https://cdn.staticfile.org/react-dom/16.4.0/umd/react-dom.development.js"></script>
+    <script src="https://cdn.staticfile.org/babel-standalone/6.26.0/babel.min.js"></script>
+    <script src="https://cdn.staticfile.org/jquery/1.10.2/jquery.min.js"></script>
+</head>
+<body>
+
+    <div id="example"></div>
+
+    <!-- 事件 -->
+    <script type="text/babel">
+        class Toggle extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {
+                    isToggleOn: true,
+                    name:'myN'
+                };
+
+                // 这边绑定是必要的，这样 `this` 才能在回调函数中使用
+                this.handleClick = this.handleClick.bind(this,this.state.name);
+            }
+
+            handleClick(name,e) {
+                this.setState(prevState => {
+                    console.log(prevState);
+                    return {
+                        isToggleOn:!prevState.isToggleOn
+                    };
+                });
+                alert(name);
+            }
+
+            render() {
+                return (
+                    <button onClick={this.handleClick}>
+                        {this.state.isToggleOn ? 'ON' : 'OFF'}
+                    </button>
+                );
+            }
+        }
+
+        ReactDOM.render(
+            <Toggle />,
+            document.getElementById('example')
+        );
+    </script>
+
+    <!-- 数组、列表 -->
+    <script type="text/babel">
+        function NumberList(props) {
+            const numbers = props.numbers;
+            const listItems = numbers.map((number) =>
+                <li id={number.toString()} key={number.toString()}>
+                    {number}
+                </li>
+            );
+            return (
+                <ul>{listItems}</ul>
+            );
+        }
+
+        const numbers = [1, 2, 3, 4, 5];
+        ReactDOM.render(
+            <NumberList numbers={numbers} />,
+            document.getElementById('example')
+        );
+    </script>
+
+    <!-- 通过ajax获取渲染数据 -->
+    <script type="text/babel">
+        class UserGist extends React.Component {
+            constructor(props) {
+                super(props);
+                //在state设置两个属性，以便后续通过state对象来对其进行修改
+                this.state = {username: '', lastGistUrl: ''};
+                //绑定挂载事件
+                this.componentDidMount = this.componentDidMount.bind(this);
+            }
+
+            componentDidMount() {
+                //接下来操作state时上下文对象发生改变，此处拿到操作句柄
+                let that = this;
+                //ajax请求
+                this.serverRequest = $.ajax({
+                    url: this.props.source,
+                    type:"GET",
+                    dataType: 'jsonp',
+                    success: function (result) {
+                        console.log(result.data);
+                        let lastGist = result.data[0];
+                        //此处的上下文发生改变，this的指针指向发生了变化，通过上述定义的that来操作
+                        that.setState({
+                            username: lastGist.owner.login,
+                            lastGistUrl: lastGist.html_url
+                        })
+                    },
+                    error:function () {
+                        alert('xxx');
+                    }
+                })
+            }
+
+            //卸载React组件时，把多余请求关闭，以免影响其他框架或组件的操作
+            componentWillUnmount() {
+                this.serverRequest.abort();
+            }
+
+            render() {
+                return (
+                    <div>
+                        {this.state.username} 用户最新的 Gist 共享地址：
+                        <a href={this.state.lastGistUrl} rel="nofollow">{this.state.lastGistUrl}</a>
+                    </div>
+                );
+            }
+        }
+
+        ReactDOM.render(
+            <UserGist source="https://api.github.com/users/octocat/gists" />,
+            document.getElementById('example')
+        );
+    </script>
+
+</body>
+</html>
