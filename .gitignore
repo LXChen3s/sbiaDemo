@@ -1,7 +1,10 @@
-/target/
-/out/
+/target
+/out
 /src/main/resources/application.properties
+/src/test
 !.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
 
 ### STS ###
 .apt_generated
