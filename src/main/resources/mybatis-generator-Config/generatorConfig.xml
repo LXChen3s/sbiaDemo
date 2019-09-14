@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+<generatorConfiguration>
+  <!-- properties标签最多一个，引入一个外部属性文件 -->
+  <properties resource="application.properties"/>
+  <!-- context 一个或多个，指定环境 -->
+  <context id="MySqlContext" targetRuntime="MyBatis3Simple" defaultModelType="flat">
+    <!-- 配置mysql前后分隔符（反单引号） -->
+    <property name="beginningDelimiter" value="`"/>
+    <property name="endingDelimiter" value="`"/>
+    <!-- 配置生成注释信息,type属性指定自定义注释生成器 -->
+    <commentGenerator type="com.sbia.sbiademo.tools.mybatis_generator.MyGeneratorComment">
+      <!-- 阻止生成的注释包含时间戳 -->
+      <property name="suppressDate" value="true"/>
+      <!-- 添加数据库表的备注信息 -->
+      <property name="addRemarkComments" value="true"/>
+    </commentGenerator>
+    <!-- 连接数据库信息，只有一个 -->
+    <jdbcConnection driverClass="com.mysql.cj.jdbc.Driver"
+                    connectionURL="jdbc:mysql://localhost:3306/sia_db?serverTimezone=UTC&amp;nullCatalogMeansCurrent=true"
+                    userId="root"
+                    password="3s3999">
+    </jdbcConnection>
+    <!-- 控制生成实体类，只有一个 -->
+    <javaModelGenerator targetPackage="com.sbia.sbiademo.model" targetProject="src\main\java">
+      <property name="trimString" value="true"/>
+    </javaModelGenerator>
+    <!-- SQL映射（mapper.xml）生成器的配置 -->
+    <sqlMapGenerator targetPackage="mybatisMapper" targetProject="src\main\resources">
+    </sqlMapGenerator>
+    <!-- java客户端（Mapper接口）生成器配置 -->
+    <javaClientGenerator targetPackage="com.sbia.sbiademo.mapper" type="XMLMAPPER" targetProject="src\main\java">
+    </javaClientGenerator>
+    <!-- 指定数据库中需要生成的表 -->
+    <table tableName="tb_category" domainObjectName="Category">
+      <generatedKey column="id" sqlStatement="MySql"/>
+    </table>
+  </context>
+</generatorConfiguration>
