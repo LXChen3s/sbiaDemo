@@ -1,4 +1,4 @@
-#什么是 Apache Shiro？
+# 什么是 Apache Shiro？
 Apache Shiro是一个强大易用的 Java 安全框架，提供了认证、授权、加密和
 会话管理功能，可为任何应用提供安全保障 - 从命令行应用、移动应用到大
 型网络及企业应用。 
@@ -16,7 +16,7 @@ Shiro 为解决下列问题（应用安全的四要素）提供了保护应用�
 #Shiro架构图  
 ![](./markdownFile/0002.png)  
 
-#身份验证
+# 身份验证
 一般流程：收集用户身份/凭证，调用Subject.login()进行登录，注意捕获
 相应认证异常。  
 ````
@@ -155,7 +155,7 @@ public AuthenticationInfo afterAllAttempts(AuthenticationToken token, Authentica
         return aggregate;
 } 
 ````
-#授权  
+# 授权  
 PermissionsAuthorizationFilter调用Subject的isPermitted();
 ````
 if (perms != null && perms.length > 0) {
@@ -234,7 +234,7 @@ protected AuthorizationInfo doGetAuthorizationInfo(PrincipalCollection principal
 }
 ````
 
-#拦截器  
+# 拦截器  
 程序入口为OncePerRequestFilter的doFilter()，调用AbstractShiroFilter
 的doFilterInternal();
 ````
@@ -312,7 +312,7 @@ public void doFilter(ServletRequest request, ServletResponse response) throws IO
 }
 ````  
 
-#加密
+# 加密
 AuthenticatingRealm会进行密码验证；
 ````
 assertCredentialsMatch(token, info);
