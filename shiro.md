@@ -360,3 +360,136 @@ protected Hash hashProvidedCredentials(Object credentials, Object salt, int hash
     return new SimpleHash(hashAlgorithmName, credentials, salt, hashIterations);
 }
 ````
+
+# 会话列表浏览
+利用SessionDAO的getActiveSessions();
+````
+@RequestMapping("index")
+@ResponseBody
+public String list() {
+    Collection<Session> sessions =  sessionDAO.getActiveSessions();
+    List<Map> sessionInfo=new ArrayList<>();
+    for(Session session:sessions){
+        Map<String,String> map=new HashMap<>();
+        map.put("uuid",session.getId().toString());
+        Object nameObj=session.getAttribute(DefaultSubjectContext.PRINCIPALS_SESSION_KEY);
+        String name=nameObj==null?"匿名":nameObj.toString();
+        map.put("name",name);
+        map.put("主机地址",session.getHost());
+        map.put("最后登录时间",session.getLastAccessTime().toString());
+        map.put("超时时间",Long.toString(session.getTimeout()));
+        sessionInfo.add(map);
+    }
+    return JSON.toJSONString(sessionInfo);
+}
+````
+# 并发人数控制
+控制同一账户同时在线人数；  
+主要思路：利用过滤器；  
+设定所有url必定经过该过滤器处理；
+````
+Map<String, Filter> filters = new HashMap<>();
+filters.put("kickOut", kickoutSessionControlFilter());
+bean.setFilters(filters);
+Map<String, String> chains = new HashMap<>();
+chains.put("/**", "kickOut");
+bean.setFilterChainDefinitionMap(chains);
+````
+简单起见，利用一个类静态变量HashTable保存用户-会话之间的关系；  
+大致流程：  
+获取当前访问对象，检测是否已登录；  
+如已登录，则根据用户名获取当前所拥有会话；  
+如会话不在缓存中则加入缓存；  
+如会话数超过设定值，则对指定会话添加“提出”属性；  
+被踢出用户在下一次刷新时会被要求登录；
+
+````
+public class KickoutSessionControlFilter extends AccessControlFilter {
+    private int maxSession;
+    private boolean kickoutAfter;
+    private String kickoutUrl;
+    @Autowired
+    private SessionManager sessionManager;
+
+    private static Map<String,Deque<Serializable>> cache=new Hashtable<>();
+
+    @Override
+    protected boolean isAccessAllowed(ServletRequest request, ServletResponse response, Object mappedValue) throws Exception {
+        return false;
+    }
+
+    @Override
+    protected boolean onAccessDenied(ServletRequest request, ServletResponse response) throws Exception {
+        Subject subject = getSubject(request, response);
+        if(!subject.isAuthenticated() && !subject.isRemembered()) {
+            //如果没有登录，直接进行之后的流程
+            return true;
+        }
+
+        Session session = subject.getSession();
+        String username = (String) subject.getPrincipal();
+        Serializable sessionId = session.getId();
+
+        //TODO 同步控制
+        Deque<Serializable> deque = cache.get(username);
+        if(deque == null) {
+            deque = new LinkedList<Serializable>();
+            cache.put(username, deque);
+        }
+
+        //如果队列里没有此sessionId，且用户没有被踢出；放入队列
+        if(!deque.contains(sessionId) && session.getAttribute("kickout") == null) {
+            deque.push(sessionId);
+        }
+
+        //如果队列里的sessionId数超出最大会话数，开始踢人
+        while(deque.size() > maxSession) {
+            Serializable kickoutSessionId = null;
+            if(kickoutAfter) { //如果踢出后者
+                kickoutSessionId = deque.removeFirst();
+            } else { //否则踢出前者
+                kickoutSessionId = deque.removeLast();
+            }
+            try {
+                Session kickoutSession =
+                        sessionManager.getSession(new DefaultSessionKey(kickoutSessionId));
+                if(kickoutSession != null) {
+                    //设置会话的kickout属性表示踢出了
+                    kickoutSession.setAttribute("kickout", true);
+                }
+            } catch (Exception e) {//ignore exception
+            }
+        }
+
+        //如果被踢出了，直接退出，重定向到踢出后的地址
+        if (session.getAttribute("kickout") != null) {
+            //会话被踢出了
+            try {
+                subject.logout();
+            } catch (Exception e) { //ignore
+            }
+            saveRequest(request);
+            WebUtils.issueRedirect(request, response, kickoutUrl);
+            return false;
+        }
+        return true;
+    }
+
+    public void setMaxSession(int maxSession) {
+        this.maxSession = maxSession;
+    }
+
+    public void setKickoutAfter(boolean kickoutAfter) {
+        this.kickoutAfter = kickoutAfter;
+    }
+
+    public void setKickoutUrl(String kickoutUrl) {
+        this.kickoutUrl = kickoutUrl;
+    }
+}
+````
+
+
+
+
+
